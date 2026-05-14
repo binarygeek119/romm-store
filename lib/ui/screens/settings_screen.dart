@@ -47,7 +47,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _isTestingRaConnection = false;
   String? _connectionError;
   String? _pairedToken;
-  bool _connectionSuccess = false;
   String? _raConnectionError;
   bool _raConnectionSuccess = false;
   final FocusNode _controllerFocusNode = FocusNode(debugLabel: 'settingsController');

@@ -176,7 +176,7 @@ class ExtractionService {
   Future<void> _handleSevenZip(String archivePath, String destDir) async {
     final sevenZipExe = await directoryService.resolveSevenZipPath();
     if (sevenZipExe == null) {
-      throw Exception('7zr.exe could not be initialized. Try reinstalling Freegosy.');
+      throw Exception('7zr.exe could not be initialized. Try reinstalling RomM Store.');
     }
     final result = await Process.run(
       sevenZipExe,

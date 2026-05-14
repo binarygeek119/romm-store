@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:io' as io;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:freegosy/core/storage/rom_mapping_service.dart';
-import 'package:freegosy/core/storage/download_cache_service.dart';
-import 'package:freegosy/providers/romm_provider.dart';
+import 'package:romm_store/core/storage/rom_mapping_service.dart';
+import 'package:romm_store/core/storage/download_cache_service.dart';
+import 'package:romm_store/providers/romm_provider.dart';
 
 class FileSanityService {
   final RomMappingService _mappingService;

@@ -59,7 +59,7 @@ class ErrorHandler {
           } else if (statusCode == 422) {
             return AppError(
               title: 'Invalid Request',
-              message: 'The server rejected the request. This may be a Freegosy bug.',
+              message: 'The server rejected the request. This may be a RomM Store bug.',
               severity: ErrorSeverity.error,
               technical: error.toString(),
             );

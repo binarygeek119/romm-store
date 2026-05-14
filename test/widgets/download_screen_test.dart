@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:freegosy/core/downloader/download_service.dart';
-import 'package:freegosy/providers/download_provider.dart';
-import 'package:freegosy/ui/screens/download_screen.dart';
-import 'package:freegosy/providers/shared_prefs_provider.dart';
+import 'package:romm_store/core/downloader/download_service.dart';
+import 'package:romm_store/providers/download_provider.dart';
+import 'package:romm_store/ui/screens/download_screen.dart';
+import 'package:romm_store/providers/shared_prefs_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MockDownloadNotifier extends DownloadNotifier {

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=RomM Store
+Comment=Browse RomM and download ROMs
+Exec=romm-store %u
+Icon=romm-store
+Terminal=false
+Categories=Game;Utility;
+StartupNotify=true

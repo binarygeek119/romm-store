@@ -186,17 +186,6 @@ final filteredGamesProvider = Provider<List<Game>>((ref) {
   return filtered;
 });
 
-final retroarchSyncModeProvider = createPersistentProvider<String>('retroarch_sync_mode', 'both');
-final rpcs3ArchitectureProvider = createPersistentProvider<String>('rpcs3_macos_architecture', 'x64');
-final edenBuildTypeProvider = createPersistentProvider<String>('eden_build_type', 'stable');
-final retroarchNdsCoreProvider = createPersistentProvider<String>('retroarch_nds_core', 'melonds');
-
-// Legacy compatibility
-final retroarchSyncModeLoaderProvider = FutureProvider<void>((ref) async {});
-final rpcs3ArchitectureLoaderProvider = FutureProvider<void>((ref) async {});
-final edenBuildTypeLoaderProvider = FutureProvider<void>((ref) async {});
-final retroarchNdsCoreLoaderProvider = FutureProvider<void>((ref) async {});
-
 final platformLogoCacheProvider = FutureProvider.family<Uint8List?, String>((ref, logoUrl) async {
   if (logoUrl.isEmpty) return null;
   try {

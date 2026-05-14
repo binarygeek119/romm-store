@@ -1,56 +1,17 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:freegosy/core/storage/directory_service.dart';
-import 'package:freegosy/core/romm/romm_models.dart';
-import 'package:freegosy/core/romm/romm_service.dart';
-import 'package:freegosy/core/emulator/strategy_registry.dart';
-import 'package:freegosy/core/save/save_sync_service.dart';
-import 'package:freegosy/core/save/backup_repository.dart';
-import 'package:freegosy/core/save/backup_service.dart';
-import 'package:freegosy/core/emulator/strategies/windows_strategy.dart';
-import 'package:freegosy/core/emulator/emulator_registry_data.dart';
-import 'package:freegosy/core/romm/rom_scanner_service.dart';
-import 'package:freegosy/core/romm/library_snapshot_service.dart';
-import 'package:freegosy/core/storage/metadata_cache_service.dart';
-import 'package:freegosy/core/storage/rom_mapping_service.dart';
-import 'package:freegosy/core/storage/download_cache_service.dart';
-import 'package:freegosy/providers/custom_emulators_provider.dart';
-import 'package:freegosy/providers/shared_prefs_provider.dart';
-import 'package:freegosy/core/emulator/firmware_service.dart';
-import 'package:freegosy/core/storage/secure_storage_service.dart';
-
-final emulatorStatusProvider = FutureProvider<Map<String, bool>>((ref) async {
-  final directoryService = ref.watch(directoryServiceProvider).asData?.value;
-  if (directoryService == null) return {};
-
-  final states = <String, bool>{};
-  for (final def in kEmulatorDefinitions) {
-    final id = def['id'] as String;
-    final String exe;
-    if (defaultTargetPlatform == TargetPlatform.macOS) {
-      exe = (def['macos_executable'] as String?) ?? (def['windows_executable'] as String? ?? '');
-    } else if (defaultTargetPlatform == TargetPlatform.linux) {
-      exe = (def['linux_executable'] as String?) ?? '';
-    } else {
-      exe = (def['windows_executable'] as String?) ?? '';
-    }
-    if (exe.isEmpty) {
-      states[id] = true;
-      continue;
-    }
-    states[id] = await directoryService.isEmulatorInstalled(id, exe);
-  }
-  return states;
-});
-
-final firmwareServiceProvider = FutureProvider<FirmwareService?>((ref) async {
-  final rommService = ref.watch(rommServiceProvider);
-  ref.watch(isOfflineProvider);
-  final directoryService = ref.watch(directoryServiceProvider).asData?.value;
-  final strategyRegistry = await ref.watch(strategyRegistryProvider.future);
-  if (rommService == null || directoryService == null || strategyRegistry == null) return null;
-  return FirmwareService(rommService, directoryService, strategyRegistry);
-});
+import 'package:romm_store/core/storage/directory_service.dart';
+import 'package:romm_store/core/romm/romm_models.dart';
+import 'package:romm_store/core/romm/romm_service.dart';
+import 'package:romm_store/core/save/backup_repository.dart';
+import 'package:romm_store/core/save/backup_service.dart';
+import 'package:romm_store/core/storage/download_cache_service.dart';
+import 'package:romm_store/core/storage/metadata_cache_service.dart';
+import 'package:romm_store/core/storage/rom_mapping_service.dart';
+import 'package:romm_store/core/romm/rom_scanner_service.dart';
+import 'package:romm_store/core/romm/library_snapshot_service.dart';
+import 'package:romm_store/providers/shared_prefs_provider.dart';
+import 'package:romm_store/core/storage/secure_storage_service.dart';
 
 final downloadCacheServiceProvider = Provider<DownloadCacheService>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
@@ -110,41 +71,6 @@ final directoryServiceProvider = FutureProvider<DirectoryService?>((ref) async {
     service.status = StorageStatus(error: StorageError.unknown, message: e.toString());
     return service;
   }
-});
-
-// Provider for StrategyRegistry
-final strategyRegistryProvider = FutureProvider<StrategyRegistry?>((ref) async {
-  final directoryService = ref.watch(directoryServiceProvider).value;
-  final customEmulators = ref.watch(customEmulatorsProvider);
-  final prefs = ref.watch(sharedPreferencesProvider);
-  
-  if (directoryService != null) {
-    try {
-      final registry = StrategyRegistry(directoryService, prefs, customEmulators: customEmulators);
-      // Load persisted Windows exe overrides
-      final winStrategy = registry.getStrategyForSlug('windows');
-      if (winStrategy is WindowsStrategy) {
-        winStrategy.loadPersistedOverrides();
-      }
-      return registry;
-    } catch (e) {
-      return null;
-    }
-  }
-  return null;
-});
-
-// SaveSyncService provider
-final saveSyncServiceProvider = FutureProvider<SaveSyncService?>((ref) async {
-  final rommService = ref.watch(rommServiceProvider);
-  ref.watch(isOfflineProvider);
-  final directoryService = ref.watch(directoryServiceProvider).asData?.value;
-  final strategyRegistry = await ref.watch(strategyRegistryProvider.future);
-  final prefs = ref.watch(sharedPreferencesProvider);
-  if (rommService == null || directoryService == null || strategyRegistry == null) return null;
-  final service = SaveSyncService(rommService, directoryService, strategyRegistry, prefs);
-  service.windowsSaveStrategy.loadPersistedOverrides();
-  return service;
 });
 
 // Simplified RommService provider

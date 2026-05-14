@@ -1,6 +1,6 @@
 import 'dart:io' as io;
 import 'package:path/path.dart' as p;
-import 'package:freegosy/core/romm/romm_models.dart';
+import 'package:romm_store/core/romm/romm_models.dart';
 import 'linux_environment_strategy.dart';
 
 class RetroDeckStrategy extends LinuxEnvironmentStrategy {

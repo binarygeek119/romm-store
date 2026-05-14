@@ -29,14 +29,14 @@ class SystemUtils {
     String? path;
     if (Platform.isWindows) {
       path = Platform.environment['APPDATA'] ?? '';
-      path = '$path\\Freegosy';
+      path = '$path\\RommStore';
     } else if (Platform.isMacOS) {
       // Fix: Get app support directly
       final dir = await getApplicationSupportDirectory();
       path = dir.path; 
     } else if (Platform.isLinux) {
       final home = Platform.environment['HOME'] ?? '';
-      path = '$home/.config/Freegosy';
+      path = '$home/.config/RommStore';
     }
 
     if (path != null && path.isNotEmpty) {

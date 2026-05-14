@@ -1,5 +1,5 @@
 import 'dart:io' as io;
-import 'package:freegosy/core/romm/romm_models.dart';
+import 'package:romm_store/core/romm/romm_models.dart';
 
 abstract class LinuxEnvironmentStrategy {
   String get name;

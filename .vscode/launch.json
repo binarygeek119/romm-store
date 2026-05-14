@@ -1,0 +1,22 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Freegosy (Flutter: default device)",
+      "request": "launch",
+      "type": "dart"
+    },
+    {
+      "name": "Freegosy (Flutter: Windows)",
+      "request": "launch",
+      "type": "dart",
+      "deviceId": "windows"
+    },
+    {
+      "name": "Freegosy (Flutter: Chrome)",
+      "request": "launch",
+      "type": "dart",
+      "deviceId": "chrome"
+    }
+  ]
+}

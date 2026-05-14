@@ -3,9 +3,10 @@ import 'dart:async';
 import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:flutter/foundation.dart';
-import 'package:freegosy/core/storage/directory_service.dart';
-import 'package:freegosy/core/extraction/extraction_service.dart';
-import 'package:freegosy/core/romm/romm_models.dart';
+import 'package:romm_store/core/storage/directory_service.dart';
+import 'package:romm_store/core/extraction/extraction_service.dart';
+import 'package:romm_store/core/ps2/ps2_game_id_catalog.dart';
+import 'package:romm_store/core/romm/romm_models.dart';
 
 class DownloadProgress {
   final String id;
@@ -273,8 +274,15 @@ class DownloadService {
   /// then deletes the zip. Finds the main ROM by largest file size.
   Future<void> _extractMultiFile(Game game, String zipPath) async {
     final romDir = await directoryService.getRomDirectory(game);
-    // Sanitize game name for use as folder name - matches DirectoryService sanitization
-    final folderName = game.name.replaceAll(RegExp(r'[<>:"/\\|?*]'), ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+    String folderName;
+    if (Ps2GameIdCatalog.isPs2Platform(game)) {
+      final catalogStem = await Ps2GameIdCatalog.instance.resolveDownloadBaseName(game);
+      folderName = catalogStem ??
+          game.name.replaceAll(RegExp(r'[<>:"/\\|?*]'), ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+    } else {
+      folderName =
+          game.name.replaceAll(RegExp(r'[<>:"/\\|?*]'), ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+    }
     String extractDir = p.join(romDir, folderName);
 
     debugPrint('[DownloadService] Extraction starting...');

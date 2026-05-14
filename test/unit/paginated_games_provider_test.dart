@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:freegosy/core/romm/romm_models.dart';
-import 'package:freegosy/core/romm/romm_service.dart';
-import 'package:freegosy/providers/paginated_games_provider.dart';
-import 'package:freegosy/providers/romm_provider.dart';
+import 'package:romm_store/core/romm/romm_models.dart';
+import 'package:romm_store/core/romm/romm_service.dart';
+import 'package:romm_store/providers/paginated_games_provider.dart';
+import 'package:romm_store/providers/romm_provider.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 

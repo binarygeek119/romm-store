@@ -5,11 +5,12 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:freegosy/core/romm/romm_models.dart';
-import 'package:freegosy/core/emulator/linux_strategies/linux_environment_strategy.dart';
-import 'package:freegosy/core/emulator/linux_strategies/native_linux_strategy.dart';
-import 'package:freegosy/core/emulator/linux_strategies/emudeck_strategy.dart';
-import 'package:freegosy/core/emulator/linux_strategies/retrodeck_strategy.dart';
+import 'package:romm_store/core/romm/romm_models.dart';
+import 'package:romm_store/core/ps2/ps2_game_id_catalog.dart';
+import 'package:romm_store/core/emulator/linux_strategies/linux_environment_strategy.dart';
+import 'package:romm_store/core/emulator/linux_strategies/native_linux_strategy.dart';
+import 'package:romm_store/core/emulator/linux_strategies/emudeck_strategy.dart';
+import 'package:romm_store/core/emulator/linux_strategies/retrodeck_strategy.dart';
 
 enum StorageError { none, pathNotFound, permissionDenied, unknown }
 
@@ -449,7 +450,21 @@ class DirectoryService {
 
   Future<String> getRomFilePath(Game game) async {
     final romDir = await getRomDirectory(game);
-    final fileName = game.fsName ?? game.fileName ?? game.name.replaceAll(RegExp(r'[<>:"/\\|?*]'), ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+    final String fileName;
+    if (Ps2GameIdCatalog.isPs2Platform(game)) {
+      final catalogStem = await Ps2GameIdCatalog.instance.resolveDownloadBaseName(game);
+      if (catalogStem != null) {
+        fileName = '$catalogStem${Ps2GameIdCatalog.extensionForDownload(game)}';
+      } else {
+        fileName = game.fsName ??
+            game.fileName ??
+            game.name.replaceAll(RegExp(r'[<>:"/\\|?*]'), ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+      }
+    } else {
+      fileName = game.fsName ??
+          game.fileName ??
+          game.name.replaceAll(RegExp(r'[<>:"/\\|?*]'), ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+    }
     return p.join(romDir, fileName);
   }
 
@@ -464,6 +479,13 @@ class DirectoryService {
 
     // Names to check (in order of priority)
     final namesToCheck = <String>[];
+    if (Ps2GameIdCatalog.isPs2Platform(game)) {
+      final stem = await Ps2GameIdCatalog.instance.resolveDownloadBaseName(game);
+      if (stem != null) {
+        final ext = Ps2GameIdCatalog.extensionForDownload(game);
+        namesToCheck.add('$stem$ext');
+      }
+    }
     if (game.fsName != null) namesToCheck.add(game.fsName!);
     if (game.fileName != null) namesToCheck.add(game.fileName!);
     
@@ -655,7 +677,7 @@ class DirectoryService {
       final appData = await _getWindowsAppData();
       if (appData == null) return null;
 
-      final dest = File('$appData\\Freegosy\\thirdparty\\7zr.exe');
+      final dest = File('$appData\\RommStore\\thirdparty\\7zr.exe');
       if (await dest.exists()) return dest.path;
 
       try {
@@ -668,7 +690,7 @@ class DirectoryService {
       }
     } else if (defaultTargetPlatform == TargetPlatform.macOS) {
       final appSupport = await getApplicationSupportDirectory();
-      final dest = File('${appSupport.path}/Freegosy/thirdparty/7zz');
+      final dest = File('${appSupport.path}/RommStore/thirdparty/7zz');
       if (await dest.exists()) return dest.path;
 
       try {
@@ -708,7 +730,7 @@ class DirectoryService {
   Future<String> getEmulatorAppSupportDirectory(String emulatorName, {String? platformSlug}) async {
     if (io.Platform.isMacOS) {
       final appSupport = await getApplicationSupportDirectory();
-      // On macOS, getApplicationSupportDirectory() returns ~/Library/Application Support/com.abduznik.freegosy
+      // On macOS, getApplicationSupportDirectory() returns ~/Library/Application Support/<bundle id> (e.g. com.rommstore.romm_store)
       // We want ~/Library/Application Support/emulatorName
       return p.join(appSupport.parent.parent.path, 'Application Support', emulatorName);
     } else if (io.Platform.isWindows) {

@@ -53,6 +53,32 @@ void EnableFullDpiSupportIfAvailable(HWND hwnd) {
   FreeLibrary(user32_module);
 }
 
+// Borderless fullscreen on the monitor that owns |hwnd| (Alt+F4 still closes).
+void EnterBorderlessFullscreen(HWND hwnd) {
+  HMONITOR const monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+  MONITORINFO mi{};
+  mi.cbSize = sizeof(MONITORINFO);
+  if (!GetMonitorInfo(monitor, &mi)) {
+    ShowWindow(hwnd, SW_SHOWMAXIMIZED);
+    return;
+  }
+
+  RECT const rc = mi.rcMonitor;
+
+  SetWindowLongPtr(hwnd, GWL_STYLE,
+                   WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
+
+  LONG_PTR const ex_style = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
+  SetWindowLongPtr(hwnd, GWL_EXSTYLE,
+                   ex_style & ~(WS_EX_DLGMODALFRAME | WS_EX_WINDOWEDGE |
+                                WS_EX_CLIENTEDGE | WS_EX_STATICEDGE));
+
+  SetWindowPos(hwnd, HWND_TOP, rc.left, rc.top, rc.right - rc.left,
+               rc.bottom - rc.top, SWP_FRAMECHANGED);
+  ShowWindow(hwnd, SW_SHOW);
+  SetForegroundWindow(hwnd);
+}
+
 }  // namespace
 
 // Manages the Win32Window's window class registration.
@@ -150,7 +176,8 @@ bool Win32Window::Create(const std::wstring& title,
 }
 
 bool Win32Window::Show() {
-  return ShowWindow(window_handle_, SW_SHOWNORMAL);
+  EnterBorderlessFullscreen(window_handle_);
+  return true;
 }
 
 // static

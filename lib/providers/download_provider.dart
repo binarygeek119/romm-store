@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../core/downloader/download_service.dart';
-import '../core/emulator/emulator_download_service.dart';
 import '../core/extraction/extraction_service.dart';
 import '../core/romm/romm_models.dart';
 import '../core/constants/app_constants.dart';
@@ -22,7 +21,7 @@ final downloadServiceProvider = FutureProvider<DownloadService?>((ref) async {
     connectTimeout: const Duration(seconds: 60),
     receiveTimeout: const Duration(hours: 4), // Allow up to 4 hours for large ROMs
     headers: {
-      'User-Agent': 'Freegosy/${AppConstants.version}',
+      'User-Agent': 'RommStore/${AppConstants.version}',
       'Accept-Encoding': 'gzip, deflate, br',
     },
   ));
@@ -43,37 +42,6 @@ final downloadServiceProvider = FutureProvider<DownloadService?>((ref) async {
     extractionService: ExtractionService(directoryService),
   );
 });
-
-final emulatorDownloadServiceProvider =
-    FutureProvider<EmulatorDownloadService?>((ref) async {
-  final directoryService = await ref.watch(directoryServiceProvider.future);
-  if (directoryService == null) return null;
-
-  final dio = Dio(BaseOptions(
-    connectTimeout: const Duration(seconds: 60),
-    receiveTimeout: const Duration(minutes: 30),
-    headers: {
-      'User-Agent': 'Freegosy/${AppConstants.version}',
-    },
-  ));
-
-  if (kDebugMode || io.Platform.isLinux || io.Platform.isMacOS) {
-    dio.interceptors.add(LogInterceptor(
-      requestHeader: true,
-      requestBody: false,
-      responseHeader: true,
-      responseBody: false,
-      logPrint: (obj) => debugPrint('[Emulator-Network] $obj'),
-    ));
-  }
-
-  return EmulatorDownloadService(
-    dio,
-    directoryService,
-    ExtractionService(directoryService),
-  );
-});
-
 
 final downloadProvider =
     StateNotifierProvider<DownloadNotifier, Map<String, DownloadProgress>>((ref) {
@@ -175,6 +143,21 @@ class DownloadNotifier extends StateNotifier<Map<String, DownloadProgress>> {
       return;
     }
 
+    // Resume: unpause **before** the stream emits — otherwise [_updateProgress] drops
+    // `Downloading...` events while [isPaused] is still true (race guard meant for pause-only).
+    final prev = state[game.id];
+    if (prev != null && prev.isPaused) {
+      state = {
+        ...state,
+        game.id: prev.copyWith(
+          isPaused: false,
+          status: 'Downloading...',
+          game: prev.game ?? game,
+          downloadUrl: prev.downloadUrl ?? downloadUrl,
+        ),
+      };
+    }
+
     final service = await _ref.read(downloadServiceProvider.future);
     final rommService = _ref.read(rommServiceProvider);
     if (service == null) return;
@@ -194,6 +177,11 @@ class DownloadNotifier extends StateNotifier<Map<String, DownloadProgress>> {
       },
       onError: (e) {
         _cancelTokens.remove(game.id);
+        // Pause/cancel uses CancelToken; do not surface that as a hard download error,
+        // otherwise controller Resume (A) is blocked by `progress.error != null`.
+        if (CancelToken.isCancel(e)) {
+          return;
+        }
         if (state.containsKey(game.id)) {
           _updateProgress(game.id, state[game.id]!.copyWith(error: e.toString()));
         }
@@ -250,30 +238,6 @@ class DownloadNotifier extends StateNotifier<Map<String, DownloadProgress>> {
     } catch (e) {
       debugPrint('[DownloadNotifier] Error deleting partial file: $e');
     }
-  }
-
-  Future<void> startEmulatorDownload(
-      String emulatorId, String emulatorName, {String? architecture, String? buildType, String? urlOverride}) async {
-    // If already downloading, do nothing
-    if (_cancelTokens.containsKey(emulatorId)) return;
-
-    final service = await _ref.read(emulatorDownloadServiceProvider.future);
-    if (service == null) return;
-
-    final cancelToken = CancelToken();
-    _cancelTokens[emulatorId] = cancelToken;
-
-    service.downloadEmulator(emulatorId, architecture: architecture, buildType: buildType, urlOverride: urlOverride, cancelToken: cancelToken).listen(
-      (progress) {
-        _updateProgress(emulatorId, progress);
-      },
-      onDone: () {
-        _cancelTokens.remove(emulatorId);
-      },
-      onError: (e) {
-        _cancelTokens.remove(emulatorId);
-      },
-    );
   }
 
   void removeDownload(String id) {

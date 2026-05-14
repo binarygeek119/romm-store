@@ -1,11 +1,11 @@
 {
-    "name": "freegosy",
-    "short_name": "freegosy",
+    "name": "RomM Store",
+    "short_name": "RomM Store",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#ffffff",
-    "description": "A new Flutter project.",
+    "description": "RomM Store — browse RomM and download ROMs.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

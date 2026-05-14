@@ -376,6 +376,53 @@ class PaginatedGamesNotifier extends StateNotifier<PaginatedGamesState> {
     }
   }
 
+  /// `#` matches titles whose first printable ASCII character is not A–Z.
+  /// Otherwise [bucket] must be a single letter A–Z.
+  static bool letterBucketMatches(Game game, String bucket) {
+    final raw = game.displayName.trim();
+    if (raw.isEmpty) return bucket == '#';
+    final codeUnit = raw.codeUnitAt(0);
+    final isAsciiLetter =
+        (codeUnit >= 0x41 && codeUnit <= 0x5a) || (codeUnit >= 0x61 && codeUnit <= 0x7a);
+    if (bucket == '#') return !isAsciiLetter;
+    if (bucket.isEmpty) return false;
+    final want = bucket.substring(0, 1).toUpperCase();
+    final got = String.fromCharCode(codeUnit).toUpperCase();
+    return got == want;
+  }
+
+  int? _firstIndexForLetterBucket(String bucket) {
+    final games = state.games;
+    for (var i = 0; i < games.length; i++) {
+      if (letterBucketMatches(games[i], bucket)) return i;
+    }
+    return null;
+  }
+
+  /// Loads additional pages until a game matching [bucket] appears, or the catalog ends.
+  Future<int?> jumpToLetterBucket(String bucket) async {
+    final normalized = bucket == '#' ? '#' : bucket.substring(0, 1).toUpperCase();
+    const maxPages = 400;
+    var pages = 0;
+    while (pages < maxPages) {
+      final idx = _firstIndexForLetterBucket(normalized);
+      if (idx != null) return idx;
+      if (!state.hasMore) return null;
+      final service = _ref.read(rommServiceProvider);
+      if (service == null) return null;
+      if (state.isLoadingMore) {
+        await Future<void>.delayed(const Duration(milliseconds: 40));
+        continue;
+      }
+      final lenBefore = state.games.length;
+      await loadMore();
+      if (state.games.length == lenBefore && !state.isLoadingMore) return null;
+      pages++;
+      if (!state.hasMore && _firstIndexForLetterBucket(normalized) == null) return null;
+    }
+    return null;
+  }
+
   void reset() {
     _cache.clear();
     _offsets.clear();
@@ -403,4 +450,12 @@ final recentlyAddedProvider = FutureProvider<List<Game>>((ref) async {
   final service = ref.watch(rommServiceProvider);
   if (service == null) return [];
   return service.getRecentlyAdded(limit: 15);
+});
+
+/// First catalog page — used as a simple “Popular / spotlight” rail on the home storefront.
+final storefrontPopularGamesProvider = FutureProvider<List<Game>>((ref) async {
+  final service = ref.watch(rommServiceProvider);
+  if (service == null) return [];
+  final page = await service.getGamesPage(offset: 0, limit: 24);
+  return page.games;
 });

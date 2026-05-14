@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../core/romm/romm_models.dart';
+import '../../core/ui/system_logo_resolver.dart';
 import '../../providers/library_provider.dart';
 
 class GameCard extends ConsumerWidget {
@@ -12,6 +13,9 @@ class GameCard extends ConsumerWidget {
   final String? platformLogoUrl;
   final bool isDownloaded;
   final bool showTitle;
+  /// How the cover bitmap fills the image region (e.g. [BoxFit.contain] for square store tiles).
+  final BoxFit coverFit;
+  final Alignment coverAlignment;
 
   const GameCard({
     super.key,
@@ -20,10 +24,18 @@ class GameCard extends ConsumerWidget {
     this.platformLogoUrl,
     this.isDownloaded = false,
     this.showTitle = true,
+    this.coverFit = BoxFit.cover,
+    this.coverAlignment = Alignment.topCenter,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final localLogoPath = SystemLogoResolver.assetPathForGame(
+      platformDisplayName: game.platformDisplayName,
+      platformSlug: game.platformSlug,
+    );
+    final hasLocalLogo = localLogoPath != null && localLogoPath.isNotEmpty;
+
     return RepaintBoundary(
       child: Card(
         margin: EdgeInsets.zero,
@@ -42,8 +54,8 @@ class GameCard extends ConsumerWidget {
                       ? const Center(child: Icon(Icons.sports_esports, size: 48))
                       : CachedNetworkImage(
                           imageUrl: coverUrl!,
-                          fit: BoxFit.cover,
-                          alignment: Alignment.topCenter,
+                          fit: coverFit,
+                          alignment: coverAlignment,
                           memCacheWidth: 300,
                           memCacheHeight: 400,
                           placeholder: (context, url) => Container(
@@ -70,36 +82,67 @@ class GameCard extends ConsumerWidget {
                         child: const Icon(Icons.check, size: 14, color: Colors.white),
                       ),
                     ),
-                  if (platformLogoUrl != null && platformLogoUrl!.isNotEmpty)
+                  if (hasLocalLogo ||
+                      (platformLogoUrl != null && platformLogoUrl!.isNotEmpty))
                     Positioned.fill(
                       child: Align(
                         alignment: Alignment.bottomRight,
                         child: Padding(
                           padding: const EdgeInsets.all(6),
-                          child: Consumer(
-                            builder: (context, ref, _) {
-                              final logoAsync = platformLogoUrl != null && platformLogoUrl!.isNotEmpty
-                                  ? ref.watch(platformLogoCacheProvider(platformLogoUrl!))
-                                  : const AsyncValue<Uint8List?>.data(null);
-                              return logoAsync.when(
-                                data: (bytes) {
-                                  if (bytes == null) return const SizedBox.shrink();
-                                  return Opacity(
-                                    opacity: 0.9,
-                                    child: FractionallySizedBox(
-                                      widthFactor: 0.3,
-                                      heightFactor: 0.3,
-                                      child: SvgPicture.memory(
-                                        bytes,
-                                        fit: BoxFit.contain,
-                                      ),
-                                    ),
-                                  );
-                                },
-                                loading: () => const SizedBox.shrink(),
-                                error: (_, _) => const SizedBox.shrink(),
-                              );
-                            },
+                          child: FractionallySizedBox(
+                            widthFactor: 0.45,
+                            heightFactor: 0.3,
+                            child: hasLocalLogo
+                                ? Image.asset(
+                                    localLogoPath,
+                                    fit: BoxFit.contain,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Consumer(
+                                        builder: (context, ref, _) {
+                                          final logoAsync = platformLogoUrl != null &&
+                                                  platformLogoUrl!.isNotEmpty
+                                              ? ref.watch(platformLogoCacheProvider(platformLogoUrl!))
+                                              : const AsyncValue<Uint8List?>.data(null);
+                                          return logoAsync.when(
+                                            data: (bytes) {
+                                              if (bytes == null) return const SizedBox.shrink();
+                                              return Opacity(
+                                                opacity: 0.9,
+                                                child: SvgPicture.memory(
+                                                  bytes,
+                                                  fit: BoxFit.contain,
+                                                ),
+                                              );
+                                            },
+                                            loading: () => const SizedBox.shrink(),
+                                            error: (_, _) => const SizedBox.shrink(),
+                                          );
+                                        },
+                                      );
+                                    },
+                                  )
+                                : Consumer(
+                                    builder: (context, ref, _) {
+                                      final logoAsync = platformLogoUrl != null &&
+                                              platformLogoUrl!.isNotEmpty
+                                          ? ref.watch(platformLogoCacheProvider(platformLogoUrl!))
+                                          : const AsyncValue<Uint8List?>.data(null);
+                                      return logoAsync.when(
+                                        data: (bytes) {
+                                          if (bytes == null) return const SizedBox.shrink();
+                                          return Opacity(
+                                            opacity: 0.9,
+                                            child: SvgPicture.memory(
+                                              bytes,
+                                              fit: BoxFit.contain,
+                                            ),
+                                          );
+                                        },
+                                        loading: () => const SizedBox.shrink(),
+                                        error: (_, _) => const SizedBox.shrink(),
+                                      );
+                                    },
+                                  ),
                           ),
                         ),
                       ),

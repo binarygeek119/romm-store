@@ -87,7 +87,7 @@ class ReleaseService {
 
       // GitHub: use Atom feed to get latest tag, then construct asset URLs
       final feedUrl = 'https://github.com/$repo/releases.atom';
-      final feedResponse = await http.get(Uri.parse(feedUrl), headers: {'User-Agent': 'Freegosy'});
+      final feedResponse = await http.get(Uri.parse(feedUrl), headers: {'User-Agent': 'RommStore'});
       if (feedResponse.statusCode != 200) return [];
 
       // Extract latest release tag from Atom feed
@@ -98,7 +98,7 @@ class ReleaseService {
 
       // Now fetch the release page for that specific tag to get asset links
       final releasePage = 'https://github.com/$repo/releases/expanded_assets/$tag';
-      final pageResponse = await http.get(Uri.parse(releasePage), headers: {'User-Agent': 'Freegosy'});
+      final pageResponse = await http.get(Uri.parse(releasePage), headers: {'User-Agent': 'RommStore'});
       if (pageResponse.statusCode != 200) return [];
 
       return _parseHtmlAssets(pageResponse.body, 'https://github.com', requiredFilters, excludedFilters);
@@ -109,7 +109,7 @@ class ReleaseService {
 
   Future<List<Map<String, String>>> _htmlScrape(String url, String base, 
       List<String> requiredFilters, List<String> excludedFilters) async {
-    final response = await http.get(Uri.parse(url), headers: {'User-Agent': 'Freegosy'});
+    final response = await http.get(Uri.parse(url), headers: {'User-Agent': 'RommStore'});
     if (response.statusCode != 200) return [];
     return _parseHtmlAssets(response.body, base, requiredFilters, excludedFilters);
   }
@@ -138,7 +138,7 @@ class ReleaseService {
 
   Future<List<Map<String, String>>> _scrapeDolphin(List<String> requiredFilters, List<String> excludedFilters) async {
     try {
-      final response = await http.get(Uri.parse('https://dolphin-emu.org/download/'), headers: {'User-Agent': 'Freegosy'});
+      final response = await http.get(Uri.parse('https://dolphin-emu.org/download/'), headers: {'User-Agent': 'RommStore'});
       if (response.statusCode != 200) return [];
 
       final html = response.body;

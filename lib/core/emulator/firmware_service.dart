@@ -1,10 +1,10 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
-import 'package:freegosy/core/romm/romm_models.dart';
-import 'package:freegosy/core/romm/romm_service.dart';
-import 'package:freegosy/core/storage/directory_service.dart';
-import 'package:freegosy/core/emulator/strategy_registry.dart';
+import 'package:romm_store/core/romm/romm_models.dart';
+import 'package:romm_store/core/romm/romm_service.dart';
+import 'package:romm_store/core/storage/directory_service.dart';
+import 'package:romm_store/core/emulator/strategy_registry.dart';
 
 typedef FirmwareProgressCallback = void Function(String fileName, int received, int total);
 

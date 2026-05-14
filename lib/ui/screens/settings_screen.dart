@@ -1,6 +1,7 @@
 import 'dart:io' as io;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../core/storage/secure_storage_service.dart';
@@ -10,16 +11,24 @@ import '../../providers/romm_provider.dart';
 import '../../providers/library_provider.dart';
 import '../../providers/shared_prefs_provider.dart';
 import '../../providers/downloaded_games_cache_provider.dart';
+import '../../providers/ui_provider.dart';
+import '../../providers/retroachievements_provider.dart';
+import '../../core/input/controller_keymap.dart';
 import '../../core/romm/romm_service.dart';
 import '../../core/romm/romm_models.dart';
 import '../../core/storage/logger_service.dart';
-import 'settings_emulators_section.dart';
 import 'settings_display_section.dart';
-import 'settings_custom_emulators_section.dart';
+import '../library_focus_bridge.dart';
 import '../../core/constants/app_constants.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
-  const SettingsScreen({super.key});
+  /// When true (nested under library shell), hides AppBar and B pops the shell route.
+  final bool embeddedShell;
+
+  /// Xbox / keyboard focus scope for the embedded shell body ([embeddedShell] only).
+  final FocusNode? shellFocusNode;
+
+  const SettingsScreen({super.key, this.embeddedShell = false, this.shellFocusNode});
 
   @override
   ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
@@ -30,11 +39,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   late TextEditingController _usernameController;
   late TextEditingController _passwordController;
   late TextEditingController _apiKeyController;
+  late TextEditingController _raUsernameController;
+  late TextEditingController _raApiKeyController;
   bool _preferencesLoaded = false;
   bool _isLegacyAuth = false;
   bool _isTestingConnection = false;
+  bool _isTestingRaConnection = false;
   String? _connectionError;
   String? _pairedToken;
+  bool _connectionSuccess = false;
+  String? _raConnectionError;
+  bool _raConnectionSuccess = false;
+  final FocusNode _controllerFocusNode = FocusNode(debugLabel: 'settingsController');
 
   @override
   void initState() {
@@ -43,15 +59,76 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _usernameController = TextEditingController();
     _passwordController = TextEditingController();
     _apiKeyController = TextEditingController();
+    _raUsernameController = TextEditingController();
+    _raApiKeyController = TextEditingController();
   }
 
   @override
   void dispose() {
+    _controllerFocusNode.dispose();
     _baseUrlController.dispose();
     _usernameController.dispose();
     _passwordController.dispose();
     _apiKeyController.dispose();
+    _raUsernameController.dispose();
+    _raApiKeyController.dispose();
     super.dispose();
+  }
+
+  void _handleControllerNavigation(KeyEvent event) {
+    if (event is! KeyDownEvent) return;
+    final key = event.logicalKey;
+    final focusScope = FocusScope.of(context);
+    final hasTargetFocus =
+        focusScope.focusedChild != null && focusScope.focusedChild != _controllerFocusNode;
+
+    if (ControllerKeyMap.isUp(key)) {
+      if (!hasTargetFocus) {
+        focusScope.nextFocus();
+      } else {
+        focusScope.focusInDirection(TraversalDirection.up);
+      }
+      return;
+    }
+    if (ControllerKeyMap.isDown(key)) {
+      if (!hasTargetFocus) {
+        focusScope.nextFocus();
+      } else {
+        focusScope.focusInDirection(TraversalDirection.down);
+      }
+      return;
+    }
+    if (ControllerKeyMap.isLeft(key)) {
+      if (!hasTargetFocus) {
+        focusScope.nextFocus();
+      } else {
+        focusScope.focusInDirection(TraversalDirection.left);
+      }
+      return;
+    }
+    if (ControllerKeyMap.isRight(key)) {
+      if (!hasTargetFocus) {
+        focusScope.nextFocus();
+      } else {
+        focusScope.focusInDirection(TraversalDirection.right);
+      }
+      return;
+    }
+    if (ControllerKeyMap.isSelect(key)) {
+      if (!hasTargetFocus) {
+        focusScope.nextFocus();
+      } else {
+        Actions.invoke(context, const ActivateIntent());
+      }
+      return;
+    }
+    if (ControllerKeyMap.isBack(key)) {
+      if (widget.embeddedShell && Navigator.of(context).canPop()) {
+        LibraryFocusBridge.popShellHome?.call();
+        return;
+      }
+      ref.read(currentTabIndexProvider.notifier).state = 0;
+    }
   }
 
   @override
@@ -59,8 +136,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final directoryServiceAsync = ref.watch(directoryServiceProvider);
     final rommService = ref.watch(rommServiceProvider);
     final rommConfigAsync = ref.watch(rommConfigProvider);
-    final strategyRegistry = ref.watch(strategyRegistryProvider).asData?.value;
-    final emulatorStatusAsync = ref.watch(emulatorStatusProvider);
 
     final cardAspectRatio = ref.watch(cardAspectRatioProvider);
     final columnCount = ref.watch(columnCountProvider);
@@ -68,23 +143,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final showTitle = ref.watch(showTitleProvider);
     final activePreset = ref.watch(activePresetProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            Image.asset('freegosy_logo.png', height: 32, width: 32),
-            const SizedBox(width: 12),
-            const Text('Settings'),
-          ],
-        ),
-      ),
-      body: rommConfigAsync.when(
+    Widget bodyContent = rommConfigAsync.when(
         data: (rommConfig) {
           if (!_preferencesLoaded) {
+            final prefs = ref.read(sharedPreferencesProvider);
             _baseUrlController.text = rommConfig.baseUrl;
             _usernameController.text = rommConfig.username;
             _passwordController.text = rommConfig.password;
             _apiKeyController.text = rommConfig.apiKey;
+            _raUsernameController.text = prefs.getString('raUsername') ?? '';
+            SecureStorageService.read('raApiKey', prefs).then((value) {
+              if (!mounted) return;
+              _raApiKeyController.text = value ?? '';
+            });
             _isLegacyAuth = rommConfig.apiKey.isEmpty && 
                            (rommConfig.username.isNotEmpty || rommConfig.password.isNotEmpty);
             _preferencesLoaded = true;
@@ -98,28 +169,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 children: [
                   _buildRommServerSection(context, ref, rommService, rommConfig),
                   const SizedBox(height: 24),
+                  _buildRetroAchievementsSection(context, ref),
+                  const SizedBox(height: 24),
                   buildDisplaySection(context, cardAspectRatio, columnCount, cardSpacing, showTitle, activePreset, ref),
                   const SizedBox(height: 24),
                   _buildStorageSection(directoryService),
-                  const SizedBox(height: 24),
-                  _buildRetroArchSettingsSection(context, ref),
                   const SizedBox(height: 24),
                   if (defaultTargetPlatform == TargetPlatform.linux) ...[
                     _buildLinuxSettingsSection(context, ref, directoryService),
                     const SizedBox(height: 24),
                   ],
-                  emulatorStatusAsync.when(
-                    data: (states) => buildEmulatorsSection(context, directoryService, true, states, setState, ref),
-                    loading: () => buildEmulatorsSection(context, directoryService, false, {}, setState, ref),
-                    error: (e, s) => Center(child: Text('Error: $e')),
-                  ),
-                  const SizedBox(height: 24),
-                  const SettingsCustomEmulatorsSection(),
-                  if (strategyRegistry != null) ...[
-                    const SizedBox(height: 24),
-                    buildConflictsSection(strategyRegistry, setState),
-                  ],
-                  const SizedBox(height: 24),
                   _buildLegalSection(context),
                 ],
               );
@@ -130,7 +189,156 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, s) => Center(child: Text('Error: $e')),
+        );
+
+    if (widget.embeddedShell && widget.shellFocusNode != null) {
+      bodyContent = Focus(
+        focusNode: widget.shellFocusNode,
+        child: bodyContent,
+      );
+    }
+
+    return KeyboardListener(
+      focusNode: _controllerFocusNode,
+      autofocus: true,
+      onKeyEvent: _handleControllerNavigation,
+      child: Scaffold(
+        appBar: widget.embeddedShell
+            ? null
+            : AppBar(
+                title: Row(
+                  children: [
+                    Image.asset('freegosy_logo.png', height: 32, width: 32),
+                    const SizedBox(width: 12),
+                    const Text('Settings'),
+                  ],
+                ),
+              ),
+        body: bodyContent,
       ),
+    );
+  }
+
+  Widget _buildRetroAchievementsSection(BuildContext context, WidgetRef ref) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'RetroAchievements',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: _raUsernameController,
+          decoration: const InputDecoration(
+            labelText: 'RetroAchievements Username',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _raApiKeyController,
+          decoration: const InputDecoration(
+            labelText: 'Web API Key',
+            border: OutlineInputBorder(),
+          ),
+          obscureText: true,
+        ),
+        const SizedBox(height: 16),
+        if (_raConnectionError != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(
+              _raConnectionError!,
+              style: const TextStyle(color: Colors.red, fontSize: 13),
+            ),
+          ),
+        if (_raConnectionSuccess)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: Text(
+              'RetroAchievements connected!',
+              style: TextStyle(color: Colors.green, fontSize: 13),
+            ),
+          ),
+        Row(
+          children: [
+            ElevatedButton(
+              onPressed: _isTestingRaConnection
+                  ? null
+                  : () async {
+                      final username = _raUsernameController.text.trim();
+                      final apiKey = _raApiKeyController.text.trim();
+                      if (username.isEmpty || apiKey.isEmpty) {
+                        setState(() {
+                          _raConnectionError = 'Username and API Key are required';
+                          _raConnectionSuccess = false;
+                        });
+                        return;
+                      }
+
+                      setState(() {
+                        _isTestingRaConnection = true;
+                        _raConnectionError = null;
+                        _raConnectionSuccess = false;
+                      });
+
+                      try {
+                        final prefs = ref.read(sharedPreferencesProvider);
+                        await prefs.setString('raUsername', username);
+                        await SecureStorageService.write('raApiKey', apiKey, prefs);
+                        await saveRaCredentialsToFile(
+                          RaCredentials(username: username, apiKey: apiKey),
+                        );
+                        ref.invalidate(raCredentialsProvider);
+                        ref.invalidate(raUserProfileProvider);
+                        ref.invalidate(raFriendsProvider);
+                        ref.invalidate(raRecentGamesProvider);
+                        if (!mounted) return;
+                        setState(() {
+                          _isTestingRaConnection = false;
+                          _raConnectionSuccess = true;
+                        });
+                      } catch (e) {
+                        if (!mounted) return;
+                        setState(() {
+                          _isTestingRaConnection = false;
+                          _raConnectionError = 'Could not save credentials: $e';
+                        });
+                      }
+                    },
+              child: _isTestingRaConnection
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Save / Connect'),
+            ),
+            const SizedBox(width: 12),
+            OutlinedButton(
+              onPressed: () async {
+                final prefs = ref.read(sharedPreferencesProvider);
+                await prefs.remove('raUsername');
+                await SecureStorageService.delete('raApiKey', prefs);
+                await deleteRaCredentialsFile();
+                ref.invalidate(raCredentialsProvider);
+                ref.invalidate(raUserProfileProvider);
+                ref.invalidate(raFriendsProvider);
+                ref.invalidate(raRecentGamesProvider);
+                if (!mounted) return;
+                setState(() {
+                  _raUsernameController.clear();
+                  _raApiKeyController.clear();
+                  _raConnectionError = null;
+                  _raConnectionSuccess = false;
+                });
+              },
+              child: const Text('Disconnect'),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -300,23 +508,37 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           },
         ),
         const SizedBox(height: 16),
+        const Text('Computed Paths (Read-only)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey)),
+        const SizedBox(height: 8),
+        _buildPathRow(
+          label: 'ROMs Directory',
+          currentPath: directoryService.romsRootPath,
+          onChanged: null,
+        ),
+      ] else ...[
+        // This handles both non-Linux OSs and Linux 'Manual' mode
+        _buildPathRow(
+          label: 'ROMs Directory',
+          currentPath: directoryService.romsRootPath,
+          onChanged: (p) async {
+            if (p != null) {
+              await directoryService.setRomsRoot(p);
+              ref.invalidate(directoryServiceProvider);
+            }
+          },
+          onReset: () async {
+            await directoryService.resetRomsRoot();
+            ref.invalidate(directoryServiceProvider);
+          },
+        ),
+        const SizedBox(height: 16),
+        _buildPathRow(
+          label: 'Downloads Root',
+          currentPath: directoryService.romsRootPath,
+          onChanged: null,
+        ),
       ],
 
-      _buildPathRow(
-        label: 'ROMs Directory',
-        currentPath: directoryService.romsRootPath,
-        onChanged: (p) async { 
-          if (p != null) { 
-            await directoryService.setRomsRoot(p); 
-            ref.invalidate(directoryServiceProvider); 
-          } 
-        },
-        onReset: () async { 
-          await directoryService.resetRomsRoot(); 
-          ref.invalidate(directoryServiceProvider); 
-        },
-      ),
-      const SizedBox(height: 16),
       _buildPathRow(
         label: 'Emulators Directory',
         currentPath: directoryService.emulatorsRootPath,
@@ -392,8 +614,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     ]);
   }
 
-  // --- Placeholder methods for sections to pass analysis ---
-  Widget _buildRetroArchSettingsSection(BuildContext context, WidgetRef ref) => const SizedBox();
   Widget _buildLinuxSettingsSection(BuildContext context, WidgetRef ref, DirectoryService directoryService) => const SizedBox();
   Widget _buildLegalSection(BuildContext context) {
     return Column(

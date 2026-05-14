@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:freegosy/core/romm/romm_models.dart';
-import 'package:freegosy/ui/widgets/game_card.dart';
+import 'package:romm_store/core/romm/romm_models.dart';
+import 'package:romm_store/ui/widgets/game_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void main() {

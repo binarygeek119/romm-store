@@ -1,8 +1,8 @@
 import 'dart:io';
-import 'package:freegosy/core/emulator/emulator_strategy.dart';
-import 'package:freegosy/core/romm/romm_models.dart';
-import 'package:freegosy/core/storage/directory_service.dart';
-import 'package:freegosy/core/windows/windows_game_service.dart';
+import 'package:romm_store/core/emulator/emulator_strategy.dart';
+import 'package:romm_store/core/romm/romm_models.dart';
+import 'package:romm_store/core/storage/directory_service.dart';
+import 'package:romm_store/core/windows/windows_game_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class WindowsStrategy extends EmulatorStrategy {

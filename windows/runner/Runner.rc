@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "abduznik" "\0"
-            VALUE "FileDescription", "freegosy" "\0"
+            VALUE "FileDescription", "RomM Store" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "freegosy" "\0"
+            VALUE "InternalName", "romm-store" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 abduznik. All rights reserved." "\0"
-            VALUE "OriginalFilename", "freegosy.exe" "\0"
-            VALUE "ProductName", "freegosy" "\0"
+            VALUE "OriginalFilename", "romm-store.exe" "\0"
+            VALUE "ProductName", "RomM Store" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

@@ -4,12 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:path/path.dart' as p;
-import 'package:freegosy/core/romm/romm_models.dart';
-import 'package:freegosy/core/romm/romm_service.dart';
-import 'package:freegosy/core/storage/directory_service.dart';
-import 'package:freegosy/core/emulator/strategy_registry.dart';
-import 'package:freegosy/core/emulator/firmware_service.dart';
-import 'package:freegosy/core/emulator/emulator_strategy.dart';
+import 'package:romm_store/core/romm/romm_models.dart';
+import 'package:romm_store/core/romm/romm_service.dart';
+import 'package:romm_store/core/storage/directory_service.dart';
+import 'package:romm_store/core/emulator/strategy_registry.dart';
+import 'package:romm_store/core/emulator/firmware_service.dart';
+import 'package:romm_store/core/emulator/emulator_strategy.dart';
 
 import 'firmware_service_test.mocks.dart';
 

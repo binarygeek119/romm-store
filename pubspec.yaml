@@ -1,5 +1,5 @@
-name: freegosy
-description: "A new Flutter project."
+name: romm_store
+description: "RomM Store — browse RomM and download ROMs (downloader-focused client)."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -54,6 +54,10 @@ dependencies:
   synchronized: ^3.1.0+1
   uuid: ^4.5.1
   intl: ^0.20.2
+  win32: ^5.15.0
+  ffi: ^2.2.0
+  audioplayers: ^5.2.1
+  gamepads: ^0.1.7
 
 dev_dependencies:
   flutter_test:
@@ -102,11 +106,11 @@ inno_bundle:
   languages:
     - english
   app:
-    name: "Freegosy"
-    description: "Freegosy Flutter app"
-    executable_name: "freegosy"
+    name: "RomM Store"
+    description: "RomM Store — RomM downloader client"
+    executable_name: "romm-store"
     url: "https://github.com/abduznik/Freegosy"
-    start_menu_group: "Freegosy"
+    start_menu_group: "RomM Store"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -115,6 +119,11 @@ inno_bundle:
 flutter:
   assets:
     - freegosy_logo.png
+    - src/assets/
+    - src/assets/sounds/
+    - src/assets/images/logo.svg
+    - src/assets/images/controls/
+    - src/assets/images/systems/
     - thirdparty/7zr.exe
     - thirdparty/7zz
     - thirdparty/7zip_license.txt

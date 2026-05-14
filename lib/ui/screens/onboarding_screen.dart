@@ -1,4 +1,5 @@
 import 'dart:io' as io;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,10 +35,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   // Step 2: Storage Config
   String? _romsRoot;
-  String? _emusRoot;
   String? _presetRoot;
   String _linuxPreset = 'default';
   bool _isStorageInitialized = false;
+  bool get _isLinuxDesktop => !kIsWeb && io.Platform.isLinux;
 
   @override
   void initState() {
@@ -51,7 +52,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final baseUrl = prefs.getString('rommBaseUrl') ?? '';
     final apiKey = await SecureStorageService.read('rommApiKey', prefs) ?? '';
     final romsRoot = prefs.getString('romsRootPath');
-    final emusRoot = prefs.getString('emulatorsRootPath');
     final linuxPreset = prefs.getString('linuxSyncPreset') ?? 'default';
     String? presetRoot;
     if (linuxPreset == 'emudeck') {
@@ -68,10 +68,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       }
       _apiKeyController.text = apiKey;
       if (romsRoot != null) _romsRoot = romsRoot;
-      if (emusRoot != null) _emusRoot = emusRoot;
       _linuxPreset = linuxPreset;
       if (presetRoot != null) _presetRoot = presetRoot;
-      if (romsRoot != null || emusRoot != null) {
+      if (romsRoot != null) {
         _isStorageInitialized = true;
       }
     });
@@ -137,12 +136,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Future<void> _initializeDefaultStorage() async {
     if (_isStorageInitialized) return;
+    if (kIsWeb) {
+      setState(() {
+        _romsRoot = 'Browser storage';
+        _isStorageInitialized = true;
+      });
+      return;
+    }
     final dirService = await ref.read(directoryServiceProvider.future);
-    if (dirService != null) {
+    if (dirService != null && !dirService.status.hasError) {
       setState(() {
         _romsRoot = dirService.romsRootPath;
-        _emusRoot = dirService.emulatorsRootPath;
         _isStorageInitialized = true;
+      });
+    } else {
+      setState(() {
+        _romsRoot = _romsRoot ?? 'Unavailable';
       });
     }
   }
@@ -154,7 +163,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     await prefs.setString('rommBaseUrl', _baseUrlController.text.trim());
     await SecureStorageService.write('rommApiKey', _apiKeyController.text.trim(), prefs);
     
-    if (io.Platform.isLinux && _linuxPreset != 'default' && _presetRoot != null) {
+    if (_isLinuxDesktop && _linuxPreset != 'default' && _presetRoot != null) {
       await prefs.setString('linuxSyncPreset', _linuxPreset);
       if (_linuxPreset == 'emudeck') {
         await prefs.setString('emudeckRootPath', _presetRoot!);
@@ -163,15 +172,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       }
       // Clear custom paths so DirectoryService uses the preset/root logic
       await prefs.remove('romsRootPath');
-      await prefs.remove('emulatorsRootPath');
-    } else if (io.Platform.isLinux) {
+    } else if (_isLinuxDesktop) {
       await prefs.setString('linuxSyncPreset', 'default');
       if (_romsRoot != null) await prefs.setString('romsRootPath', _romsRoot!);
-      if (_emusRoot != null) await prefs.setString('emulatorsRootPath', _emusRoot!);
     } else {
       // Non-Linux behavior
       if (_romsRoot != null) await prefs.setString('romsRootPath', _romsRoot!);
-      if (_emusRoot != null) await prefs.setString('emulatorsRootPath', _emusRoot!);
     }
     
     // Invalidate providers to trigger reload
@@ -254,27 +260,27 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
           const SizedBox(height: 48),
           const Text(
-            'Welcome to Freegosy',
+            'Welcome to RomM Store',
             style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
           const Text(
-            'The ultimate open-source cross-platform launcher for your self-hosted RomM library.',
+            'A Steam-style ROM storefront for your self-hosted RomM library.',
             style: TextStyle(fontSize: 18, color: Colors.grey),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 48),
           _buildInfoCard(
             icon: Icons.cloud_sync,
-            title: 'Cloud Save Sync',
-            subtitle: 'Sync your game saves across Windows, Linux, and macOS.',
+            title: 'RomM Connected',
+            subtitle: 'Browse your full library directly from your RomM server.',
           ),
           const SizedBox(height: 16),
           _buildInfoCard(
             icon: Icons.download_for_offline,
-            title: 'Automated Downloads',
-            subtitle: 'Fetch emulators and ROMs with a single click.',
+            title: 'ROM Downloader',
+            subtitle: 'Download ROMs for offline use with one click.',
           ),
         ],
       ),
@@ -297,6 +303,29 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             style: TextStyle(color: Colors.grey),
           ),
           const SizedBox(height: 40),
+
+          if (kIsWeb) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.lightBlueAccent),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Web debug uses browser sandbox storage. Custom local directories are only available on desktop builds.',
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
           TextField(
             controller: _baseUrlController,
             decoration: InputDecoration(
@@ -443,12 +472,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Where should we store your games and emulators?',
+            'Where should we store downloaded ROM files?',
             style: TextStyle(color: Colors.grey),
           ),
           const SizedBox(height: 40),
           
-          if (io.Platform.isLinux) ...[
+          if (_isLinuxDesktop) ...[
             const Text('Platform Preset', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             _buildPresetOption(
@@ -474,7 +503,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             const SizedBox(height: 32),
           ],
 
-          if (io.Platform.isLinux && _linuxPreset != 'default') ...[
+          if (_isLinuxDesktop && _linuxPreset != 'default') ...[
             _buildPathSelector(
               label: '${_linuxPreset == 'emudeck' ? 'EmuDeck' : 'RetroDeck'} Installation Root',
               currentPath: _presetRoot ?? 'Select root directory...',
@@ -492,20 +521,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ] else ...[
             _buildPathSelector(
               label: 'ROMs Directory',
-              currentPath: _romsRoot ?? 'Loading...',
-              onTap: () async {
-                final path = await FilePicker.platform.getDirectoryPath();
-                if (path != null) setState(() => _romsRoot = path);
-              },
-            ),
-            const SizedBox(height: 24),
-            _buildPathSelector(
-              label: 'Emulators Directory',
-              currentPath: _emusRoot ?? 'Loading...',
-              onTap: () async {
-                final path = await FilePicker.platform.getDirectoryPath();
-                if (path != null) setState(() => _emusRoot = path);
-              },
+              currentPath: _romsRoot ?? (kIsWeb ? 'Browser storage' : 'Loading...'),
+              onTap: kIsWeb
+                  ? null
+                  : () async {
+                      final path = await FilePicker.platform.getDirectoryPath();
+                      if (path != null) setState(() => _romsRoot = path);
+                    },
             ),
           ],
         ],
@@ -527,7 +549,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
           const SizedBox(height: 16),
           const Text(
-            'Freegosy is ready to manage your library. You can always change these settings later.',
+            'RomM Store is ready to manage your library. You can always change these settings later.',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 18, color: Colors.grey),
           ),
@@ -544,8 +566,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 _buildSummaryRow('Server', _baseUrlController.text),
                 const Divider(height: 24),
                 _buildSummaryRow('ROMs', p.basename(_romsRoot ?? '')),
-                const Divider(height: 24),
-                _buildSummaryRow('Emulators', p.basename(_emusRoot ?? '')),
               ],
             ),
           ),
@@ -622,7 +642,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  Widget _buildPathSelector({required String label, required String currentPath, required VoidCallback onTap}) {
+  Widget _buildPathSelector({required String label, required String currentPath, required VoidCallback? onTap}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -642,7 +662,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 const Icon(Icons.folder_open, color: Colors.grey),
                 const SizedBox(width: 12),
                 Expanded(child: Text(currentPath, overflow: TextOverflow.ellipsis)),
-                const Icon(Icons.edit, size: 16, color: Colors.deepPurple),
+                Icon(
+                  onTap == null ? Icons.lock_outline : Icons.edit,
+                  size: 16,
+                  color: onTap == null ? Colors.grey : Colors.deepPurple,
+                ),
               ],
             ),
           ),

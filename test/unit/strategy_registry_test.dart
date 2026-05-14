@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:freegosy/core/emulator/strategy_registry.dart';
-import 'package:freegosy/core/storage/directory_service.dart';
+import 'package:romm_store/core/emulator/strategy_registry.dart';
+import 'package:romm_store/core/storage/directory_service.dart';
 import 'package:mockito/annotations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

@@ -1,61 +1,51 @@
-# Freegosy
+# RomM “Store”
 
-A cross-platform Flutter app for browsing your RomM library, downloading ROMs, and launching games directly in emulators—all from one intuitive interface.
+> **Not a real store.** The name is a nod to the **Steam Store**—the UI took cues from **SteamOS** / Big Picture style. There is **no payment**, **no storefront**, and **no commerce**. This is a **RomM** client: a way to browse your self-hosted library and **download ROMs** to your machine. Think *RomM* **“store”** as in *your library presented like a storefront*, nothing for sale.
 
-[**Watch the Feature Walkthrough on YouTube**](https://youtu.be/SE5BoFoA700)
+This repository is an **AI-edited fork** of **[Freegosy](https://github.com/abduznik/Freegosy)** (upstream), the Flutter client for **[RomM](https://github.com/rommapp/romm)**.
+
+**What this fork is mainly for:** browsing your RomM library and **downloading ROMs** for use with **[EmuDeck](https://www.emudeck.com/)** or **[RetroDECK](https://retrodeck.net/)** (paths and layouts those tools expect). **Supported here:** **Linux** and **Windows**. Upstream Freegosy remains the broader, multi-platform RomM companion with fuller launcher features.
 
 ![Main Menu](screenshots/screenshot1.png)
-*The main menu showcasing the intuitive game card interface.*
+*Library view (layout may vary by version).*
 
 ![Game Details](screenshots/screenshot2.png)
-*Detailed game view with metadata, screenshots, and quick actions.*
+*Game detail with download-focused actions.*
 
-## Background & Vision
-Freegosy (Free as in "Free for all OS") is the successor to [**Wingosy**](https://github.com/abduznik/Wingosy-Launcher). While Wingosy was focused on Windows, Freegosy is built from the ground up using **Flutter** to provide a unified frontend for all major platforms. 
+## Who this is for
 
-The original inspiration for these projects was [**Argosy**](https://github.com/rommapp/argosy-launcher), the native Android app for RomM built in Kotlin. Freegosy aims to bring that same native experience to desktop and beyond, ensuring a seamless, ease-of-use interface for accessing your RomM collection on any device.
+- **EmuDeck** or **RetroDECK** users who run **RomM** and want a **desktop-style UI** to pull ROMs onto a Deck (or similar) where those stacks manage emulators and folders.
+- **Windows** or **Linux** users who want the same download-focused RomM client.
 
-# Support the Project
+## Features (this fork)
 
-Freegosy is a solo passion project — built and maintained in my spare time, with AI tools I pay for out of pocket. If it saves you time or makes your RomM setup better, a small contribution genuinely helps keep it going.
+- **RomM**: connect, browse platforms and games (pagination and filters where the API allows).
+- **Downloads**: HTTP downloads with progress; local paths aligned with EmuDeck / RetroDECK–style layouts where configured.
+- **Shell UI**: home / library / downloads / settings navigation tuned for controller and keyboard.
 
-[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-%E2%9D%A4-ea4aaa?logo=github)](https://github.com/sponsors/abduznik)
+## Building
 
-No pressure at all — the app is and will always be free.
+```bash
+flutter pub get
+flutter build windows --release   # Windows
+flutter build linux --release     # Linux
+```
 
-## Current Features (v0.4.1)
+Windows output: `build/windows/x64/runner/Release/` (run `romm-store.exe` with the rest of that folder).
 
-- **Native Multi-Platform Support**: Full support for **macOS** (ARM64/Intel), **Windows**, and **Linux** (including **Steam Deck/EmuDeck** and **RetroDECK** integration).
-- **Enhanced Offline Mode**: Persistent metadata caching for browsing and launching your collection without a connection.
-- **RomM Integration**: 
-    - Browse and filter your entire library with server-side pagination.
-    - Instant "Downloaded" games filter with background deep collection scanning.
-    - Download ROMs directly via HTTP with real-time progress tracking.
-    - Personal game properties support (rating, status, completion).
-- **Advanced Emulator Management**: 
-    - Download, update, and uninstall emulators directly from Settings.
-    - Automatic extraction of `.zip`, `.7z`, `.dmg`, `.tar.gz`, `.tar.xz`, and `.AppImage`.
-    - Smart binary detection and canonical naming across all platforms.
-    - Dynamic architecture selection for RPCS3 on macOS (ARM64 vs x64).
-    - **New**: Linux Environment Strategies (Default, EmuDeck, RetroDECK) with automatic path detection.
-- **BIOS Management**: Fetch and download BIOS files directly from RomM and automatically place them in the correct directory for each emulator.
-- **Save Sync**: 
-    - Bidirectional local-to-cloud save synchronization with RomM.
-    - Local Backup History (create instant restore points before experimenting).
-    - **New**: Serial Background Sync Queue (offline backups silently push to RomM automatically when you reconnect).
-    - Optimized for EmuDeck's platform-specific save structure.
-- **Refined UI/UX**:
-    - **Visual-First Grid**: Interactive game cards with detailed metadata.
-    - **Recently Played**: Quick access to your latest games.
-    - **Screenshot Gallery**: Interactive, zoomable screenshot viewer.
-    - **Multi-Disc Support**: Integrated picker for multi-file games.
+## Configuration
 
-## Calling All Testers!
-I am currently searching for testers on **macOS**, **Windows**, and **Linux (Steam Deck)** to help polish the experience. 
-
-- **Future Plans**: **Android** support is next for a truly unified app experience.
-- **Get Involved**: If you're interested in testing an early release, reach out via GitHub or join the community discussions.
+Set your RomM **base URL** and credentials in onboarding (same general model as upstream Freegosy). Download destinations follow the app’s directory settings so files land where you expect for EmuDeck / RetroDECK.
 
 ## About RomM
 
-Freegosy is built to complement [RomM](https://github.com/rommapp/romm), a modern ROM manager. It connects to your RomM instance to provide a lightweight, portable way to access and play your games.
+[RomM](https://github.com/rommapp/romm) is a self-hosted ROM manager. This app uses its API to list games and download files—it does not replace RomM on the server.
+
+## Upstream and credits
+
+- **Upstream:** [Freegosy](https://github.com/abduznik/Freegosy) (abduznik) — original cross-platform RomM Flutter app this fork is based on.
+- **Lineage:** [Argosy](https://github.com/rommapp/argosy-launcher), [Wingosy](https://github.com/abduznik/Wingosy-Launcher).
+
+**Sponsor the original upstream author:** [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-%E2%9D%A4-ea4aaa?logo=github)](https://github.com/sponsors/abduznik)
+
+This fork may diverge from upstream; open issues here for fork-specific behavior.

@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../constants/app_constants.dart';
 import '../storage/secure_storage_service.dart';
 import 'romm_models.dart';
 
@@ -18,7 +19,7 @@ class RommService {
 
   RomMConfig get config => _config;
 
-  static const String _ua = 'Freegosy/0.3.2';
+  static String get _ua => 'RommStore/${AppConstants.version}';
 
   void updateConfig(RomMConfig newConfig) {
     _config = newConfig;

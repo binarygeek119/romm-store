@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:freegosy/core/romm/romm_models.dart';
-import 'package:freegosy/core/save/save_strategy.dart';
+import 'package:romm_store/core/romm/romm_models.dart';
+import 'package:romm_store/core/save/save_strategy.dart';
 import 'package:path/path.dart' as p;
 
 class TestSaveStrategy extends SaveStrategy {

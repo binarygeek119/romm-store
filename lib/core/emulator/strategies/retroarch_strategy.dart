@@ -5,9 +5,9 @@ import 'package:dio/dio.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:archive/archive_io.dart';
-import 'package:freegosy/core/emulator/emulator_strategy.dart';
-import 'package:freegosy/core/romm/romm_models.dart';
-import 'package:freegosy/core/storage/directory_service.dart';
+import 'package:romm_store/core/emulator/emulator_strategy.dart';
+import 'package:romm_store/core/romm/romm_models.dart';
+import 'package:romm_store/core/storage/directory_service.dart';
 
 class MissingRetroArchCoreException implements Exception {
   final String coreName;

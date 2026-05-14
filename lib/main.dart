@@ -7,12 +7,14 @@ import 'core/save/backup_entry.dart';
 import 'providers/shared_prefs_provider.dart';
 
 import 'core/storage/logger_service.dart';
+import 'core/ui/system_logo_resolver.dart';
 
 final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   LoggerService.init();
+  await SystemLogoResolver.preload();
   Hive.registerAdapter(BackupEntryAdapter());
   await Hive.initFlutter();
   await Hive.openBox<List>('freegosy_backups');
@@ -24,7 +26,7 @@ void main() async {
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
       ],
-      child: const FreegosyApp(),
+      child: const RommStoreApp(),
     ),
   );
 }

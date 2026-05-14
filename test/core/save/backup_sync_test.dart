@@ -2,11 +2,11 @@ import 'dart:io' as io;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:freegosy/core/romm/romm_service.dart';
-import 'package:freegosy/core/save/backup_repository.dart';
-import 'package:freegosy/core/save/backup_entry.dart';
-import 'package:freegosy/core/save/background_sync_queue.dart';
-import 'package:freegosy/core/romm/romm_models.dart';
+import 'package:romm_store/core/romm/romm_service.dart';
+import 'package:romm_store/core/save/backup_repository.dart';
+import 'package:romm_store/core/save/backup_entry.dart';
+import 'package:romm_store/core/save/background_sync_queue.dart';
+import 'package:romm_store/core/romm/romm_models.dart';
 
 // Manual mocks to avoid build_runner overhead for a simple test
 class MockRommService extends Mock implements RommService {
